@@ -1,0 +1,1036 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DevPulse Studio | Developer Productivity Suite</title>
+
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#f0f6ff',
+                            100: '#e0edff',
+                            500: '#3b82f6',
+                            600: '#2563eb',
+                            700: '#1d4ed8',
+                            900: '#1e3a8a',
+                        },
+                        darkbg: '#0f172a',
+                        cardbg: '#1e293b'
+                    }
+                }
+            }
+        }
+    </script>
+
+    <!-- Lucide Icons CDN -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <!-- Marked.js CDN for Markdown Preview -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+
+    <!-- Google Font Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Fira+Code:wght@400;500;600&display=swap" rel="stylesheet">
+
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        code, pre, textarea.code-font {
+            font-family: 'Fira Code', monospace;
+        }
+        /* Glassmorphism utility */
+        .glass {
+            background: rgba(30, 41, 59, 0.7);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+        .light .glass {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(0, 0, 0, 0.08);
+        }
+        /* Custom scrollbars */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(15, 23, 42, 0.5);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #334155;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #475569;
+        }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col transition-colors duration-300 dark:bg-slate-950 dark:text-slate-100 light:bg-slate-50 light:text-slate-800" id="appBody">
+
+    <!-- Toast Notification Overlay -->
+    <div id="toastContainer" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2 pointer-events-none"></div>
+
+    <!-- Main Navigation Bar -->
+    <header class="sticky top-0 z-40 glass border-b border-slate-800/80 px-4 lg:px-8 py-3">
+        <div class="max-w-7xl mx-auto flex items-center justify-between">
+            <!-- Brand Logo -->
+            <div class="flex items-center gap-3">
+                <div class="p-2.5 bg-gradient-to-tr from-blue-600 to-indigo-500 rounded-xl shadow-lg shadow-blue-500/20 text-white">
+                    <i data-lucide="terminal" class="w-6 h-6"></i>
+                </div>
+                <div>
+                    <span class="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-indigo-400">
+                        DevPulse<span class="text-slate-300 dark:text-slate-400 font-normal"> Studio</span>
+                    </span>
+                    <div class="flex items-center gap-2 text-xs text-slate-400">
+                        <span class="inline-block w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                        <span>Client-Ready / Local</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Navigation Tabs -->
+            <nav class="hidden md:flex items-center gap-1 bg-slate-900/60 p-1.5 rounded-xl border border-slate-800/60 text-sm">
+                <button onclick="switchTab('dashboard')" id="nav-dashboard" class="nav-btn px-3.5 py-1.5 rounded-lg font-medium transition-all text-blue-400 bg-slate-800">
+                    Dashboard
+                </button>
+                <button onclick="switchTab('utilities')" id="nav-utilities" class="nav-btn px-3.5 py-1.5 rounded-lg font-medium text-slate-400 hover:text-slate-200 transition-all">
+                    Web Utilities
+                </button>
+                <button onclick="switchTab('kanban')" id="nav-kanban" class="nav-btn px-3.5 py-1.5 rounded-lg font-medium text-slate-400 hover:text-slate-200 transition-all">
+                    Kanban Board
+                </button>
+                <button onclick="switchTab('snippets')" id="nav-snippets" class="nav-btn px-3.5 py-1.5 rounded-lg font-medium text-slate-400 hover:text-slate-200 transition-all">
+                    Snippet Vault
+                </button>
+                <button onclick="switchTab('apitester')" id="nav-apitester" class="nav-btn px-3.5 py-1.5 rounded-lg font-medium text-slate-400 hover:text-slate-200 transition-all">
+                    API Tester
+                </button>
+            </nav>
+
+            <!-- Actions & Theme Toggle -->
+            <div class="flex items-center gap-2">
+                <button onclick="exportAppData()" class="p-2 rounded-xl bg-slate-800/80 hover:bg-slate-700 text-slate-300 transition-all" title="Export Backup JSON">
+                    <i data-lucide="download" class="w-5 h-5"></i>
+                </button>
+                <label class="p-2 rounded-xl bg-slate-800/80 hover:bg-slate-700 text-slate-300 cursor-pointer transition-all" title="Import Backup JSON">
+                    <i data-lucide="upload" class="w-5 h-5"></i>
+                    <input type="file" id="importFileInput" onchange="importAppData(event)" class="hidden" accept=".json">
+                </label>
+                <button onclick="toggleTheme()" class="p-2 rounded-xl bg-slate-800/80 hover:bg-slate-700 text-amber-400 transition-all" id="themeToggleBtn" title="Toggle Theme">
+                    <i data-lucide="sun" class="w-5 h-5"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Mobile Navigation Sub-bar -->
+        <div class="flex md:hidden items-center justify-around mt-3 pt-2 border-t border-slate-800/60 text-xs overflow-x-auto gap-2">
+            <button onclick="switchTab('dashboard')" class="px-2 py-1 text-slate-300">Dashboard</button>
+            <button onclick="switchTab('utilities')" class="px-2 py-1 text-slate-300">Utilities</button>
+            <button onclick="switchTab('kanban')" class="px-2 py-1 text-slate-300">Kanban</button>
+            <button onclick="switchTab('snippets')" class="px-2 py-1 text-slate-300">Snippets</button>
+            <button onclick="switchTab('apitester')" class="px-2 py-1 text-slate-300">API Tester</button>
+        </div>
+    </header>
+
+    <main class="flex-1 max-w-7xl w-full mx-auto p-4 md:p-6 lg:p-8">
+
+        <!-- ================= DASHBOARD TAB ================= -->
+        <section id="tab-dashboard" class="tab-content space-y-6">
+            <!-- Top Hero Banner -->
+            <div class="glass p-6 md:p-8 rounded-2xl bg-gradient-to-r from-blue-900/40 via-indigo-900/20 to-slate-900 border border-slate-800">
+                <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+                    <div>
+                        <h1 class="text-2xl md:text-3xl font-bold text-white mb-2">Welcome to DevPulse Studio</h1>
+                        <p class="text-slate-400 max-w-2xl text-sm md:text-base">
+                            Your offline-first, client-side developer toolkit. Perfectly optimized for lightweight free hosting like InfinityFree with zero backend dependencies.
+                        </p>
+                    </div>
+                    <div class="text-right glass px-4 py-3 rounded-xl border border-slate-800 min-w-[200px]">
+                        <div class="text-xs text-slate-400 font-mono" id="clockUTC">UTC: Loading...</div>
+                        <div class="text-xl font-bold text-blue-400 font-mono" id="clockLocal">00:00:00</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Stats Grid -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div class="glass p-5 rounded-xl flex items-center gap-4">
+                    <div class="p-3 bg-blue-500/10 text-blue-400 rounded-xl">
+                        <i data-lucide="code" class="w-6 h-6"></i>
+                    </div>
+                    <div>
+                        <div class="text-2xl font-bold text-white" id="stat-snippets">0</div>
+                        <div class="text-xs text-slate-400">Saved Snippets</div>
+                    </div>
+                </div>
+
+                <div class="glass p-5 rounded-xl flex items-center gap-4">
+                    <div class="p-3 bg-indigo-500/10 text-indigo-400 rounded-xl">
+                        <i data-lucide="check-square" class="w-6 h-6"></i>
+                    </div>
+                    <div>
+                        <div class="text-2xl font-bold text-white" id="stat-tasks">0</div>
+                        <div class="text-xs text-slate-400">Active Tasks</div>
+                    </div>
+                </div>
+
+                <div class="glass p-5 rounded-xl flex items-center gap-4">
+                    <div class="p-3 bg-emerald-500/10 text-emerald-400 rounded-xl">
+                        <i data-lucide="send" class="w-6 h-6"></i>
+                    </div>
+                    <div>
+                        <div class="text-2xl font-bold text-white" id="stat-api">Ready</div>
+                        <div class="text-xs text-slate-400">API Client Status</div>
+                    </div>
+                </div>
+
+                <div class="glass p-5 rounded-xl flex items-center gap-4">
+                    <div class="p-3 bg-amber-500/10 text-amber-400 rounded-xl">
+                        <i data-lucide="hard-drive" class="w-6 h-6"></i>
+                    </div>
+                    <div>
+                        <div class="text-2xl font-bold text-white" id="stat-storage">0 KB</div>
+                        <div class="text-xs text-slate-400">Local Storage Used</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quote & Quick Tools Section -->
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <!-- Daily Tech Quote -->
+                <div class="glass p-6 rounded-2xl flex flex-col justify-between border border-slate-800">
+                    <div>
+                        <div class="flex items-center justify-between mb-4">
+                            <span class="text-xs font-semibold uppercase tracking-wider text-blue-400">Daily Tech Quote</span>
+                            <button onclick="generateNewQuote()" class="text-slate-400 hover:text-slate-200">
+                                <i data-lucide="rotate-cw" class="w-4 h-4"></i>
+                            </button>
+                        </div>
+                        <blockquote class="text-base italic text-slate-200 mb-3" id="quoteText">
+                            "First, solve the problem. Then, write the code."
+                        </blockquote>
+                        <p class="text-xs text-slate-400 font-medium" id="quoteAuthor">— John Johnson</p>
+                    </div>
+                    <div class="mt-6 pt-4 border-t border-slate-800/80 flex justify-end">
+                        <button onclick="copyQuote()" class="text-xs flex items-center gap-1 text-slate-400 hover:text-blue-400 transition-colors">
+                            <i data-lucide="copy" class="w-3.5 h-3.5"></i> Copy Quote
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Fast Actions Box -->
+                <div class="glass p-6 rounded-2xl lg:col-span-2 border border-slate-800">
+                    <h3 class="text-lg font-semibold text-white mb-4">Quick Shortcuts</h3>
+                    <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                        <button onclick="switchTab('utilities'); switchUtilTab('markdown')" class="p-4 bg-slate-800/50 hover:bg-slate-800 rounded-xl border border-slate-700/50 text-left transition-all group">
+                            <i data-lucide="file-text" class="w-5 h-5 text-blue-400 mb-2 group-hover:scale-110 transition-transform"></i>
+                            <div class="text-sm font-medium text-slate-200">Markdown Editor</div>
+                            <div class="text-xs text-slate-500">Live preview & HTML</div>
+                        </button>
+                        <button onclick="switchTab('utilities'); switchUtilTab('json')" class="p-4 bg-slate-800/50 hover:bg-slate-800 rounded-xl border border-slate-700/50 text-left transition-all group">
+                            <i data-lucide="code-2" class="w-5 h-5 text-indigo-400 mb-2 group-hover:scale-110 transition-transform"></i>
+                            <div class="text-sm font-medium text-slate-200">JSON Tools</div>
+                            <div class="text-xs text-slate-500">Format & validate</div>
+                        </button>
+                        <button onclick="switchTab('utilities'); switchUtilTab('gradient')" class="p-4 bg-slate-800/50 hover:bg-slate-800 rounded-xl border border-slate-700/50 text-left transition-all group">
+                            <i data-lucide="palette" class="w-5 h-5 text-emerald-400 mb-2 group-hover:scale-110 transition-transform"></i>
+                            <div class="text-sm font-medium text-slate-200">CSS Generator</div>
+                            <div class="text-xs text-slate-500">Gradients & Shadows</div>
+                        </button>
+                        <button onclick="switchTab('kanban')" class="p-4 bg-slate-800/50 hover:bg-slate-800 rounded-xl border border-slate-700/50 text-left transition-all group">
+                            <i data-lucide="kanban" class="w-5 h-5 text-amber-400 mb-2 group-hover:scale-110 transition-transform"></i>
+                            <div class="text-sm font-medium text-slate-200">Task Board</div>
+                            <div class="text-xs text-slate-500">Kanban workflow</div>
+                        </button>
+                        <button onclick="switchTab('snippets')" class="p-4 bg-slate-800/50 hover:bg-slate-800 rounded-xl border border-slate-700/50 text-left transition-all group">
+                            <i data-lucide="bookmark" class="w-5 h-5 text-rose-400 mb-2 group-hover:scale-110 transition-transform"></i>
+                            <div class="text-sm font-medium text-slate-200">Snippet Vault</div>
+                            <div class="text-xs text-slate-500">Save reusable code</div>
+                        </button>
+                        <button onclick="switchTab('apitester')" class="p-4 bg-slate-800/50 hover:bg-slate-800 rounded-xl border border-slate-700/50 text-left transition-all group">
+                            <i data-lucide="send" class="w-5 h-5 text-cyan-400 mb-2 group-hover:scale-110 transition-transform"></i>
+                            <div class="text-sm font-medium text-slate-200">API Client</div>
+                            <div class="text-xs text-slate-500">Fetch endpoints</div>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ================= UTILITIES TAB ================= -->
+        <section id="tab-utilities" class="tab-content hidden space-y-6">
+            <!-- Sub-navigation for Utilities -->
+            <div class="flex flex-wrap gap-2 border-b border-slate-800 pb-3">
+                <button onclick="switchUtilTab('markdown')" id="util-nav-markdown" class="util-btn px-4 py-2 rounded-xl text-sm font-medium bg-blue-600 text-white">
+                    Markdown Live Preview
+                </button>
+                <button onclick="switchUtilTab('json')" id="util-nav-json" class="util-btn px-4 py-2 rounded-xl text-sm font-medium bg-slate-800 text-slate-300 hover:bg-slate-700">
+                    JSON Formatter & Validator
+                </button>
+                <button onclick="switchUtilTab('gradient')" id="util-nav-gradient" class="util-btn px-4 py-2 rounded-xl text-sm font-medium bg-slate-800 text-slate-300 hover:bg-slate-700">
+                    CSS Gradient & Shadow
+                </button>
+                <button onclick="switchUtilTab('base64')" id="util-nav-base64" class="util-btn px-4 py-2 rounded-xl text-sm font-medium bg-slate-800 text-slate-300 hover:bg-slate-700">
+                    Base64 & URL Encoder
+                </button>
+            </div>
+
+            <!-- 1. Markdown Tool -->
+            <div id="util-markdown" class="util-content space-y-4">
+                <div class="flex items-center justify-between">
+                    <h2 class="text-lg font-semibold text-white">Markdown & Live Previewer</h2>
+                    <button onclick="copyToClipboard(document.getElementById('markdownInput').value)" class="text-xs flex items-center gap-1 bg-slate-800 hover:bg-slate-700 px-3 py-1.5 rounded-lg text-slate-300 transition-colors">
+                        <i data-lucide="copy" class="w-3.5 h-3.5"></i> Copy Raw
+                    </button>
+                </div>
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 h-[500px]">
+                    <textarea id="markdownInput" oninput="updateMarkdownPreview()" class="w-full h-full p-4 bg-slate-900 border border-slate-800 rounded-xl code-font text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none" placeholder="# Type your Markdown here..."></textarea>
+                    <div id="markdownOutput" class="w-full h-full p-4 bg-slate-900/60 border border-slate-800 rounded-xl overflow-y-auto prose prose-invert max-w-none text-slate-300 text-sm"></div>
+                </div>
+            </div>
+
+            <!-- 2. JSON Tool -->
+            <div id="util-json" class="util-content hidden space-y-4">
+                <div class="flex flex-wrap items-center justify-between gap-2">
+                    <h2 class="text-lg font-semibold text-white">JSON Formatter & Validator</h2>
+                    <div class="flex items-center gap-2">
+                        <button onclick="formatJSON()" class="px-3 py-1.5 bg-blue-600 hover:bg-blue-500 text-white text-xs font-medium rounded-lg transition-colors">
+                            Format / Beautify
+                        </button>
+                        <button onclick="minifyJSON()" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-medium rounded-lg transition-colors">
+                            Minify
+                        </button>
+                        <button onclick="copyToClipboard(document.getElementById('jsonInput').value)" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-medium rounded-lg transition-colors">
+                            Copy
+                        </button>
+                    </div>
+                </div>
+                <div id="jsonStatus" class="hidden text-xs px-3 py-2 rounded-lg font-mono"></div>
+                <textarea id="jsonInput" class="w-full h-[450px] p-4 bg-slate-900 border border-slate-800 rounded-xl code-font text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Paste JSON here..."></textarea>
+            </div>
+
+            <!-- 3. CSS Gradient & Shadow Generator -->
+            <div id="util-gradient" class="util-content hidden space-y-6">
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <!-- Gradient Generator -->
+                    <div class="glass p-5 rounded-2xl space-y-4 border border-slate-800">
+                        <h3 class="text-md font-semibold text-white">Gradient Generator</h3>
+                        <div id="gradientPreview" class="h-32 w-full rounded-xl border border-slate-700/50 shadow-inner"></div>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="text-xs text-slate-400">Color 1</label>
+                                <input type="color" id="gradColor1" value="#3b82f6" oninput="updateGradient()" class="w-full h-10 bg-slate-900 rounded cursor-pointer border border-slate-800">
+                            </div>
+                            <div>
+                                <label class="text-xs text-slate-400">Color 2</label>
+                                <input type="color" id="gradColor2" value="#8b5cf6" oninput="updateGradient()" class="w-full h-10 bg-slate-900 rounded cursor-pointer border border-slate-800">
+                            </div>
+                        </div>
+                        <div>
+                            <label class="text-xs text-slate-400">Angle: <span id="gradAngleVal">90</span>°</label>
+                            <input type="range" id="gradAngle" min="0" max="360" value="90" oninput="updateGradient()" class="w-full accent-blue-500">
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <input type="text" id="gradCSS" readonly class="w-full p-2 bg-slate-900 text-xs text-slate-300 rounded border border-slate-800 code-font">
+                            <button onclick="copyToClipboard(document.getElementById('gradCSS').value)" class="p-2 bg-blue-600 hover:bg-blue-500 text-white rounded text-xs">
+                                <i data-lucide="copy" class="w-4 h-4"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Box Shadow Generator -->
+                    <div class="glass p-5 rounded-2xl space-y-4 border border-slate-800">
+                        <h3 class="text-md font-semibold text-white">Box Shadow Generator</h3>
+                        <div class="h-32 w-full rounded-xl bg-slate-900 flex items-center justify-center border border-slate-800">
+                            <div id="shadowPreview" class="w-24 h-24 bg-blue-600 rounded-xl"></div>
+                        </div>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="text-xs text-slate-400">Blur: <span id="shadowBlurVal">15</span>px</label>
+                                <input type="range" id="shadowBlur" min="0" max="50" value="15" oninput="updateShadow()" class="w-full accent-blue-500">
+                            </div>
+                            <div>
+                                <label class="text-xs text-slate-400">Spread: <span id="shadowSpreadVal">0</span>px</label>
+                                <input type="range" id="shadowSpread" min="-20" max="30" value="0" oninput="updateShadow()" class="w-full accent-blue-500">
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <input type="text" id="shadowCSS" readonly class="w-full p-2 bg-slate-900 text-xs text-slate-300 rounded border border-slate-800 code-font">
+                            <button onclick="copyToClipboard(document.getElementById('shadowCSS').value)" class="p-2 bg-blue-600 hover:bg-blue-500 text-white rounded text-xs">
+                                <i data-lucide="copy" class="w-4 h-4"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 4. Base64 & URL Encoder -->
+            <div id="util-base64" class="util-content hidden space-y-4">
+                <h2 class="text-lg font-semibold text-white">Base64 & URL Encoder / Decoder</h2>
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                    <div class="space-y-2">
+                        <label class="text-xs text-slate-400">Input Text</label>
+                        <textarea id="encodeInput" class="w-full h-40 p-3 bg-slate-900 border border-slate-800 rounded-xl code-font text-sm text-slate-200" placeholder="Type or paste content here..."></textarea>
+                        <div class="flex flex-wrap gap-2">
+                            <button onclick="handleTransform('b64Encode')" class="px-3 py-1.5 bg-blue-600 hover:bg-blue-500 text-white text-xs rounded-lg">Base64 Encode</button>
+                            <button onclick="handleTransform('b64Decode')" class="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white text-xs rounded-lg">Base64 Decode</button>
+                            <button onclick="handleTransform('urlEncode')" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs rounded-lg">URL Encode</button>
+                            <button onclick="handleTransform('urlDecode')" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs rounded-lg">URL Decode</button>
+                        </div>
+                    </div>
+                    <div class="space-y-2">
+                        <label class="text-xs text-slate-400">Output Result</label>
+                        <textarea id="encodeOutput" readonly class="w-full h-40 p-3 bg-slate-900/60 border border-slate-800 rounded-xl code-font text-sm text-slate-300" placeholder="Result will appear here..."></textarea>
+                        <button onclick="copyToClipboard(document.getElementById('encodeOutput').value)" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs rounded-lg flex items-center gap-1">
+                            <i data-lucide="copy" class="w-3.5 h-3.5"></i> Copy Output
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ================= KANBAN TAB ================= -->
+        <section id="tab-kanban" class="tab-content hidden space-y-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h2 class="text-xl font-bold text-white">Project Kanban Tracker</h2>
+                    <p class="text-xs text-slate-400">Organize your developer tasks locally with auto-save.</p>
+                </div>
+                <button onclick="openAddTaskModal()" class="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-sm font-medium flex items-center gap-1.5 shadow-lg shadow-blue-600/20">
+                    <i data-lucide="plus" class="w-4 h-4"></i> New Task
+                </button>
+            </div>
+
+            <!-- Kanban Columns -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <!-- To Do -->
+                <div class="glass p-4 rounded-2xl border border-slate-800/80 flex flex-col min-h-[500px]">
+                    <div class="flex items-center justify-between mb-3 pb-2 border-b border-slate-800">
+                        <div class="flex items-center gap-2">
+                            <span class="w-3 h-3 rounded-full bg-amber-500"></span>
+                            <h3 class="font-semibold text-slate-200">To Do</h3>
+                        </div>
+                        <span id="count-todo" class="text-xs bg-slate-800 text-slate-400 px-2 py-0.5 rounded-full">0</span>
+                    </div>
+                    <div id="col-todo" class="space-y-3 flex-1 overflow-y-auto"></div>
+                </div>
+
+                <!-- In Progress -->
+                <div class="glass p-4 rounded-2xl border border-slate-800/80 flex flex-col min-h-[500px]">
+                    <div class="flex items-center justify-between mb-3 pb-2 border-b border-slate-800">
+                        <div class="flex items-center gap-2">
+                            <span class="w-3 h-3 rounded-full bg-blue-500"></span>
+                            <h3 class="font-semibold text-slate-200">In Progress</h3>
+                        </div>
+                        <span id="count-inprogress" class="text-xs bg-slate-800 text-slate-400 px-2 py-0.5 rounded-full">0</span>
+                    </div>
+                    <div id="col-inprogress" class="space-y-3 flex-1 overflow-y-auto"></div>
+                </div>
+
+                <!-- Done -->
+                <div class="glass p-4 rounded-2xl border border-slate-800/80 flex flex-col min-h-[500px]">
+                    <div class="flex items-center justify-between mb-3 pb-2 border-b border-slate-800">
+                        <div class="flex items-center gap-2">
+                            <span class="w-3 h-3 rounded-full bg-emerald-500"></span>
+                            <h3 class="font-semibold text-slate-200">Done</h3>
+                        </div>
+                        <span id="count-done" class="text-xs bg-slate-800 text-slate-400 px-2 py-0.5 rounded-full">0</span>
+                    </div>
+                    <div id="col-done" class="space-y-3 flex-1 overflow-y-auto"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ================= SNIPPETS TAB ================= -->
+        <section id="tab-snippets" class="tab-content hidden space-y-6">
+            <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                <div>
+                    <h2 class="text-xl font-bold text-white">Snippet Vault</h2>
+                    <p class="text-xs text-slate-400">Save, search, and reuse code snippets directly in your browser.</p>
+                </div>
+                <div class="flex items-center gap-2 w-full sm:w-auto">
+                    <input type="text" id="snippetSearch" oninput="renderSnippets()" placeholder="Search tags or titles..." class="px-3 py-2 bg-slate-900 border border-slate-800 rounded-xl text-xs text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 w-full sm:w-64">
+                    <button onclick="openAddSnippetModal()" class="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-sm font-medium flex items-center gap-1.5 shrink-0 shadow-lg shadow-blue-600/20">
+                        <i data-lucide="plus" class="w-4 h-4"></i> New Snippet
+                    </button>
+                </div>
+            </div>
+
+            <!-- Snippets List Container -->
+            <div id="snippetsGrid" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
+        </section>
+
+        <!-- ================= API TESTER TAB ================= -->
+        <section id="tab-apitester" class="tab-content hidden space-y-6">
+            <div>
+                <h2 class="text-xl font-bold text-white">Quick API & Fetch Tester</h2>
+                <p class="text-xs text-slate-400">Test REST endpoints directly from your browser runtime.</p>
+            </div>
+
+            <div class="glass p-6 rounded-2xl border border-slate-800 space-y-4">
+                <!-- Endpoint URL Bar -->
+                <div class="flex flex-col sm:flex-row gap-2">
+                    <select id="apiMethod" class="bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-sm font-semibold text-blue-400 focus:outline-none">
+                        <option value="GET">GET</option>
+                        <option value="POST">POST</option>
+                        <option value="PUT">PUT</option>
+                        <option value="DELETE">DELETE</option>
+                    </select>
+                    <input type="text" id="apiUrl" value="https://jsonplaceholder.typicode.com/todos/1" placeholder="https://api.example.com/v1/resource" class="flex-1 bg-slate-900 border border-slate-800 rounded-xl px-4 py-2 text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 code-font">
+                    <button onclick="sendApiRequest()" class="px-6 py-2 bg-blue-600 hover:bg-blue-500 text-white font-medium text-sm rounded-xl flex items-center justify-center gap-2 transition-all">
+                        <i data-lucide="send" class="w-4 h-4"></i> Send
+                    </button>
+                </div>
+
+                <!-- Custom Headers / Body -->
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 pt-2">
+                    <div>
+                        <label class="text-xs text-slate-400 mb-1 block">Headers (JSON format)</label>
+                        <textarea id="apiHeaders" class="w-full h-28 p-3 bg-slate-900 border border-slate-800 rounded-xl text-xs text-slate-200 code-font focus:outline-none">{\n  "Content-Type": "application/json"\n}</textarea>
+                    </div>
+                    <div>
+                        <label class="text-xs text-slate-400 mb-1 block">Request Body (JSON)</label>
+                        <textarea id="apiBody" class="w-full h-28 p-3 bg-slate-900 border border-slate-800 rounded-xl text-xs text-slate-200 code-font focus:outline-none" placeholder="{}"></textarea>
+                    </div>
+                </div>
+
+                <!-- Response Box -->
+                <div class="pt-4 border-t border-slate-800/80 space-y-2">
+                    <div class="flex items-center justify-between text-xs">
+                        <span class="text-slate-400 font-medium">Response Output</span>
+                        <div class="flex items-center gap-3">
+                            <span id="apiStatusBadge" class="hidden px-2 py-0.5 rounded font-mono"></span>
+                            <span id="apiTimeBadge" class="text-slate-500 font-mono"></span>
+                        </div>
+                    </div>
+                    <pre id="apiResponse" class="w-full h-64 p-4 bg-slate-900/80 border border-slate-800 rounded-xl overflow-auto text-xs text-emerald-400 code-font">// Response will be displayed here...</pre>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Task Modal -->
+    <div id="taskModal" class="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-sm hidden items-center justify-center p-4">
+        <div class="glass p-6 rounded-2xl max-w-md w-full border border-slate-800 space-y-4">
+            <div class="flex items-center justify-between">
+                <h3 class="text-lg font-bold text-white" id="modalTaskTitle">Add New Task</h3>
+                <button onclick="closeTaskModal()" class="text-slate-400 hover:text-slate-200"><i data-lucide="x" class="w-5 h-5"></i></button>
+            </div>
+            <input type="hidden" id="taskEditId">
+            <div>
+                <label class="text-xs text-slate-400">Task Title</label>
+                <input type="text" id="taskTitleInput" class="w-full mt-1 p-2.5 bg-slate-900 border border-slate-800 rounded-xl text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500">
+            </div>
+            <div>
+                <label class="text-xs text-slate-400">Description</label>
+                <textarea id="taskDescInput" class="w-full mt-1 p-2.5 bg-slate-900 border border-slate-800 rounded-xl text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 h-20"></textarea>
+            </div>
+            <div>
+                <label class="text-xs text-slate-400">Status</label>
+                <select id="taskStatusInput" class="w-full mt-1 p-2.5 bg-slate-900 border border-slate-800 rounded-xl text-sm text-slate-200 focus:outline-none">
+                    <option value="todo">To Do</option>
+                    <option value="inprogress">In Progress</option>
+                    <option value="done">Done</option>
+                </select>
+            </div>
+            <div class="flex justify-end gap-2 pt-2">
+                <button onclick="closeTaskModal()" class="px-4 py-2 bg-slate-800 text-slate-300 rounded-xl text-xs font-medium">Cancel</button>
+                <button onclick="saveTask()" class="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-medium">Save Task</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Snippet Modal -->
+    <div id="snippetModal" class="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-sm hidden items-center justify-center p-4">
+        <div class="glass p-6 rounded-2xl max-w-lg w-full border border-slate-800 space-y-4">
+            <div class="flex items-center justify-between">
+                <h3 class="text-lg font-bold text-white">Save Code Snippet</h3>
+                <button onclick="closeSnippetModal()" class="text-slate-400 hover:text-slate-200"><i data-lucide="x" class="w-5 h-5"></i></button>
+            </div>
+            <div>
+                <label class="text-xs text-slate-400">Snippet Title</label>
+                <input type="text" id="snippetTitleInput" class="w-full mt-1 p-2.5 bg-slate-900 border border-slate-800 rounded-xl text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500">
+            </div>
+            <div>
+                <label class="text-xs text-slate-400">Language / Tag (e.g., JavaScript, CSS)</label>
+                <input type="text" id="snippetTagInput" class="w-full mt-1 p-2.5 bg-slate-900 border border-slate-800 rounded-xl text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500">
+            </div>
+            <div>
+                <label class="text-xs text-slate-400">Code Content</label>
+                <textarea id="snippetCodeInput" class="w-full mt-1 p-2.5 bg-slate-900 border border-slate-800 rounded-xl text-sm text-slate-200 code-font focus:outline-none focus:ring-2 focus:ring-blue-500 h-36"></textarea>
+            </div>
+            <div class="flex justify-end gap-2 pt-2">
+                <button onclick="closeSnippetModal()" class="px-4 py-2 bg-slate-800 text-slate-300 rounded-xl text-xs font-medium">Cancel</button>
+                <button onclick="saveSnippet()" class="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-medium">Save Snippet</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        /* ================= STATE MANAGEMENT ================= */
+        let state = {
+            tasks: JSON.parse(localStorage.getItem('devpulse_tasks')) || [
+                { id: '1', title: 'Setup InfinityFree Hosting', desc: 'Upload index.html to htdocs folder', status: 'done' },
+                { id: '2', title: 'Configure Domain & SSL', desc: 'Point DNS and enable Free SSL certificate', status: 'inprogress' },
+                { id: '3', title: 'Build Web App Layout', desc: 'Ensure smooth dark glassmorphism design', status: 'todo' }
+            ],
+            snippets: JSON.parse(localStorage.getItem('devpulse_snippets')) || [
+                { id: '1', title: 'Fetch API Wrapper', tag: 'JavaScript', code: 'async function getData(url) {\n  const res = await fetch(url);\n  return res.json();\n}' },
+                { id: '2', title: 'Tailwind Glassmorphism', tag: 'CSS', code: 'background: rgba(30, 41, 59, 0.7);\nbackdrop-filter: blur(12px);' }
+            ],
+            theme: localStorage.getItem('devpulse_theme') || 'dark'
+        };
+
+        const quotes = [
+            { text: "First, solve the problem. Then, write the code.", author: "John Johnson" },
+            { text: "Simplicity is prerequisite for reliability.", author: "Edsger W. Dijkstra" },
+            { text: "Code is like humor. When you have to explain it, it’s bad.", author: "Cory House" },
+            { text: "Make it work, make it right, make it fast.", author: "Kent Beck" }
+        ];
+
+        /* ================= INIT & EVENT LISTENERS ================= */
+        window.onload = function () {
+            lucide.createIcons();
+            initClock();
+            updateStats();
+            renderTasks();
+            renderSnippets();
+            updateGradient();
+            updateShadow();
+            updateMarkdownPreview();
+
+            // Set default markdown
+            document.getElementById('markdownInput').value = "# Welcome to DevPulse Studio\n\n- Multi-tool Suite\n- Client-Side & Fast\n- Offline-First\n\n```js\nconsole.log('Deployable to InfinityFree!');\n```";
+            updateMarkdownPreview();
+        };
+
+        function saveData() {
+            localStorage.setItem('devpulse_tasks', JSON.stringify(state.tasks));
+            localStorage.setItem('devpulse_snippets', JSON.stringify(state.snippets));
+            localStorage.setItem('devpulse_theme', state.theme);
+            updateStats();
+        }
+
+        /* ================= NAVIGATION & TABS ================= */
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+            document.querySelectorAll('.nav-btn').forEach(el => {
+                el.classList.remove('text-blue-400', 'bg-slate-800');
+                el.classList.add('text-slate-400');
+            });
+
+            document.getElementById(`tab-${tabId}`).classList.remove('hidden');
+            const activeNav = document.getElementById(`nav-${tabId}`);
+            if (activeNav) {
+                activeNav.classList.add('text-blue-400', 'bg-slate-800');
+                activeNav.classList.remove('text-slate-400');
+            }
+        }
+
+        function switchUtilTab(utilId) {
+            document.querySelectorAll('.util-content').forEach(el => el.classList.add('hidden'));
+            document.querySelectorAll('.util-btn').forEach(el => {
+                el.classList.remove('bg-blue-600', 'text-white');
+                el.classList.add('bg-slate-800', 'text-slate-300');
+            });
+
+            document.getElementById(`util-${utilId}`).classList.remove('hidden');
+            const activeBtn = document.getElementById(`util-nav-${utilId}`);
+            if (activeBtn) {
+                activeBtn.classList.add('bg-blue-600', 'text-white');
+                activeBtn.classList.remove('bg-slate-800', 'text-slate-300');
+            }
+        }
+
+        /* ================= CLOCK & STATS ================= */
+        function initClock() {
+            setInterval(() => {
+                const now = new Date();
+                document.getElementById('clockLocal').innerText = now.toLocaleTimeString();
+                document.getElementById('clockUTC').innerText = "UTC: " + now.toUTCString().split(' ')[4];
+            }, 1000);
+        }
+
+        function updateStats() {
+            document.getElementById('stat-snippets').innerText = state.snippets.length;
+            document.getElementById('stat-tasks').innerText = state.tasks.filter(t => t.status !== 'done').length;
+            
+            const storageBytes = new Blob([JSON.stringify(localStorage)]).size;
+            document.getElementById('stat-storage').innerText = (storageBytes / 1024).toFixed(1) + " KB";
+        }
+
+        function generateNewQuote() {
+            const random = quotes[Math.floor(Math.random() * quotes.length)];
+            document.getElementById('quoteText').innerText = `"${random.text}"`;
+            document.getElementById('quoteAuthor').innerText = `— ${random.author}`;
+        }
+
+        function copyQuote() {
+            const q = document.getElementById('quoteText').innerText;
+            const a = document.getElementById('quoteAuthor').innerText;
+            copyToClipboard(`${q} ${a}`);
+        }
+
+        /* ================= UTILITIES LOGIC ================= */
+        function updateMarkdownPreview() {
+            const raw = document.getElementById('markdownInput').value;
+            if (window.marked) {
+                document.getElementById('markdownOutput').innerHTML = marked.parse(raw);
+            }
+        }
+
+        function formatJSON() {
+            const input = document.getElementById('jsonInput');
+            const status = document.getElementById('jsonStatus');
+            try {
+                const parsed = JSON.parse(input.value);
+                input.value = JSON.stringify(parsed, null, 2);
+                status.className = "text-xs px-3 py-2 rounded-lg font-mono bg-emerald-500/10 text-emerald-400 block";
+                status.innerText = "✓ Valid JSON Formatted Successfully";
+            } catch (e) {
+                status.className = "text-xs px-3 py-2 rounded-lg font-mono bg-rose-500/10 text-rose-400 block";
+                status.innerText = "✗ Invalid JSON: " + e.message;
+            }
+        }
+
+        function minifyJSON() {
+            const input = document.getElementById('jsonInput');
+            const status = document.getElementById('jsonStatus');
+            try {
+                const parsed = JSON.parse(input.value);
+                input.value = JSON.stringify(parsed);
+                status.className = "text-xs px-3 py-2 rounded-lg font-mono bg-emerald-500/10 text-emerald-400 block";
+                status.innerText = "✓ Valid JSON Minified Successfully";
+            } catch (e) {
+                status.className = "text-xs px-3 py-2 rounded-lg font-mono bg-rose-500/10 text-rose-400 block";
+                status.innerText = "✗ Invalid JSON: " + e.message;
+            }
+        }
+
+        function updateGradient() {
+            const c1 = document.getElementById('gradColor1').value;
+            const c2 = document.getElementById('gradColor2').value;
+            const angle = document.getElementById('gradAngle').value;
+            document.getElementById('gradAngleVal').innerText = angle;
+            
+            const css = `background: linear-gradient(${angle}deg, ${c1}, ${c2});`;
+            document.getElementById('gradientPreview').style.background = `linear-gradient(${angle}deg, ${c1}, ${c2})`;
+            document.getElementById('gradCSS').value = css;
+        }
+
+        function updateShadow() {
+            const blur = document.getElementById('shadowBlur').value;
+            const spread = document.getElementById('shadowSpread').value;
+            document.getElementById('shadowBlurVal').innerText = blur;
+            document.getElementById('shadowSpreadVal').innerText = spread;
+
+            const css = `box-shadow: 0px 10px ${blur}px ${spread}px rgba(0, 0, 0, 0.5);`;
+            document.getElementById('shadowPreview').style.boxShadow = `0px 10px ${blur}px ${spread}px rgba(0,0,0,0.5)`;
+            document.getElementById('shadowCSS').value = css;
+        }
+
+        function handleTransform(type) {
+            const input = document.getElementById('encodeInput').value;
+            const output = document.getElementById('encodeOutput');
+            try {
+                if (type === 'b64Encode') output.value = btoa(input);
+                if (type === 'b64Decode') output.value = atob(input);
+                if (type === 'urlEncode') output.value = encodeURIComponent(input);
+                if (type === 'urlDecode') output.value = decodeURIComponent(input);
+            } catch (err) {
+                showToast("Transformation error: " + err.message, "error");
+            }
+        }
+
+        /* ================= KANBAN BOARD LOGIC ================= */
+        function renderTasks() {
+            const cols = { todo: document.getElementById('col-todo'), inprogress: document.getElementById('col-inprogress'), done: document.getElementById('col-done') };
+            Object.values(cols).forEach(col => col.innerHTML = '');
+
+            const counts = { todo: 0, inprogress: 0, done: 0 };
+
+            state.tasks.forEach(task => {
+                counts[task.status]++;
+                const card = document.createElement('div');
+                card.className = "p-3.5 bg-slate-900 border border-slate-800 rounded-xl space-y-2 hover:border-slate-700 transition-all";
+                card.innerHTML = `
+                    <div class="flex items-start justify-between gap-2">
+                        <h4 class="font-medium text-sm text-slate-200">${escapeHtml(task.title)}</h4>
+                        <div class="flex items-center gap-1">
+                            <button onclick="moveTask('${task.id}')" class="text-slate-400 hover:text-blue-400 p-1"><i data-lucide="arrow-right-left" class="w-3.5 h-3.5"></i></button>
+                            <button onclick="deleteTask('${task.id}')" class="text-slate-400 hover:text-rose-400 p-1"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>
+                        </div>
+                    </div>
+                    <p class="text-xs text-slate-400">${escapeHtml(task.desc || 'No description')}</p>
+                `;
+                cols[task.status].appendChild(card);
+            });
+
+            document.getElementById('count-todo').innerText = counts.todo;
+            document.getElementById('count-inprogress').innerText = counts.inprogress;
+            document.getElementById('count-done').innerText = counts.done;
+
+            lucide.createIcons();
+            saveData();
+        }
+
+        function openAddTaskModal() {
+            document.getElementById('taskTitleInput').value = '';
+            document.getElementById('taskDescInput').value = '';
+            document.getElementById('taskModal').classList.remove('hidden');
+            document.getElementById('taskModal').classList.add('flex');
+        }
+
+        function closeTaskModal() {
+            document.getElementById('taskModal').classList.add('hidden');
+            document.getElementById('taskModal').classList.remove('flex');
+        }
+
+        function saveTask() {
+            const title = document.getElementById('taskTitleInput').value.trim();
+            const desc = document.getElementById('taskDescInput').value.trim();
+            const status = document.getElementById('taskStatusInput').value;
+
+            if (!title) return showToast("Task title is required", "error");
+
+            state.tasks.push({ id: Date.now().toString(), title, desc, status });
+            closeTaskModal();
+            renderTasks();
+            showToast("Task added successfully!");
+        }
+
+        function moveTask(id) {
+            const task = state.tasks.find(t => t.id === id);
+            if (!task) return;
+            const nextStatus = { todo: 'inprogress', inprogress: 'done', done: 'todo' };
+            task.status = nextStatus[task.status];
+            renderTasks();
+            showToast(`Task moved to ${task.status.toUpperCase()}`);
+        }
+
+        function deleteTask(id) {
+            state.tasks = state.tasks.filter(t => t.id !== id);
+            renderTasks();
+            showToast("Task deleted");
+        }
+
+        /* ================= SNIPPET VAULT LOGIC ================= */
+        function renderSnippets() {
+            const container = document.getElementById('snippetsGrid');
+            const query = document.getElementById('snippetSearch').value.toLowerCase();
+            container.innerHTML = '';
+
+            const filtered = state.snippets.filter(s => 
+                s.title.toLowerCase().includes(query) || s.tag.toLowerCase().includes(query)
+            );
+
+            filtered.forEach(snippet => {
+                const card = document.createElement('div');
+                card.className = "glass p-4 rounded-xl border border-slate-800 space-y-3";
+                card.innerHTML = `
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <h3 class="font-medium text-sm text-slate-200">${escapeHtml(snippet.title)}</h3>
+                            <span class="inline-block mt-1 px-2 py-0.5 bg-blue-500/10 text-blue-400 text-[10px] rounded font-medium">${escapeHtml(snippet.tag)}</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <button onclick="copyToClipboard(\`${escapeHtml(snippet.code)}\`)" class="p-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded text-xs">
+                                <i data-lucide="copy" class="w-3.5 h-3.5"></i>
+                            </button>
+                            <button onclick="deleteSnippet('${snippet.id}')" class="p-1.5 bg-slate-800 hover:bg-rose-900/50 text-slate-400 hover:text-rose-400 rounded text-xs">
+                                <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <pre class="p-3 bg-slate-900 rounded-lg text-xs text-slate-300 code-font overflow-x-auto max-h-36">${escapeHtml(snippet.code)}</pre>
+                `;
+                container.appendChild(card);
+            });
+
+            lucide.createIcons();
+            saveData();
+        }
+
+        function openAddSnippetModal() {
+            document.getElementById('snippetTitleInput').value = '';
+            document.getElementById('snippetTagInput').value = '';
+            document.getElementById('snippetCodeInput').value = '';
+            document.getElementById('snippetModal').classList.remove('hidden');
+            document.getElementById('snippetModal').classList.add('flex');
+        }
+
+        function closeSnippetModal() {
+            document.getElementById('snippetModal').classList.add('hidden');
+            document.getElementById('snippetModal').classList.remove('flex');
+        }
+
+        function saveSnippet() {
+            const title = document.getElementById('snippetTitleInput').value.trim();
+            const tag = document.getElementById('snippetTagInput').value.trim() || 'General';
+            const code = document.getElementById('snippetCodeInput').value;
+
+            if (!title || !code) return showToast("Title and Code required", "error");
+
+            state.snippets.push({ id: Date.now().toString(), title, tag, code });
+            closeSnippetModal();
+            renderSnippets();
+            showToast("Snippet saved!");
+        }
+
+        function deleteSnippet(id) {
+            state.snippets = state.snippets.filter(s => s.id !== id);
+            renderSnippets();
+            showToast("Snippet removed");
+        }
+
+        /* ================= API TESTER LOGIC ================= */
+        async function sendApiRequest() {
+            const method = document.getElementById('apiMethod').value;
+            const url = document.getElementById('apiUrl').value.trim();
+            const headersRaw = document.getElementById('apiHeaders').value;
+            const bodyRaw = document.getElementById('apiBody').value;
+            const resContainer = document.getElementById('apiResponse');
+            const statusBadge = document.getElementById('apiStatusBadge');
+            const timeBadge = document.getElementById('apiTimeBadge');
+
+            if (!url) return showToast("Please enter a valid URL", "error");
+
+            resContainer.innerText = "// Sending request...";
+            statusBadge.classList.add('hidden');
+
+            const startTime = performance.now();
+
+            try {
+                let headers = {};
+                if (headersRaw) headers = JSON.parse(headersRaw);
+
+                const options = { method, headers };
+                if (['POST', 'PUT'].includes(method) && bodyRaw) {
+                    options.body = bodyRaw;
+                }
+
+                const res = await fetch(url, options);
+                const duration = Math.round(performance.now() - startTime);
+
+                timeBadge.innerText = `${duration} ms`;
+                statusBadge.classList.remove('hidden');
+                statusBadge.innerText = `${res.status} ${res.statusText}`;
+
+                if (res.ok) {
+                    statusBadge.className = "px-2 py-0.5 rounded font-mono bg-emerald-500/20 text-emerald-400";
+                } else {
+                    statusBadge.className = "px-2 py-0.5 rounded font-mono bg-rose-500/20 text-rose-400";
+                }
+
+                const text = await res.text();
+                try {
+                    resContainer.innerText = JSON.stringify(JSON.parse(text), null, 2);
+                } catch {
+                    resContainer.innerText = text;
+                }
+            } catch (err) {
+                timeBadge.innerText = `0 ms`;
+                statusBadge.classList.remove('hidden');
+                statusBadge.className = "px-2 py-0.5 rounded font-mono bg-rose-500/20 text-rose-400";
+                statusBadge.innerText = "Fetch Error";
+                resContainer.innerText = "// Request failed: " + err.message;
+            }
+        }
+
+        /* ================= EXPORT & IMPORT DATA ================= */
+        function exportAppData() {
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(state, null, 2));
+            const downloadAnchor = document.createElement('a');
+            downloadAnchor.setAttribute("href", dataStr);
+            downloadAnchor.setAttribute("download", `devpulse_backup_${new Date().toISOString().slice(0,10)}.json`);
+            document.body.appendChild(downloadAnchor);
+            downloadAnchor.click();
+            downloadAnchor.remove();
+            showToast("Backup exported successfully!");
+        }
+
+        function importAppData(event) {
+            const fileReader = new FileReader();
+            fileReader.onload = function (e) {
+                try {
+                    const imported = JSON.parse(e.target.result);
+                    if (imported.tasks && imported.snippets) {
+                        state = imported;
+                        saveData();
+                        renderTasks();
+                        renderSnippets();
+                        showToast("Data restored successfully!");
+                    } else {
+                        showToast("Invalid backup file structure", "error");
+                    }
+                } catch (err) {
+                    showToast("Error reading JSON file", "error");
+                }
+            };
+            fileReader.readAsText(event.target.files[0]);
+        }
+
+        /* ================= GENERAL HELPERS ================= */
+        function toggleTheme() {
+            const body = document.getElementById('appBody');
+            if (body.classList.contains('dark')) {
+                body.classList.remove('dark');
+                body.classList.add('light');
+                state.theme = 'light';
+            } else {
+                body.classList.remove('light');
+                body.classList.add('dark');
+                state.theme = 'dark';
+            }
+            saveData();
+        }
+
+        function copyToClipboard(text) {
+            if (!text) return;
+            const textarea = document.createElement('textarea');
+            textarea.value = text;
+            document.body.appendChild(textarea);
+            textarea.select();
+            document.execCommand('copy');
+            document.body.removeChild(textarea);
+            showToast("Copied to clipboard!");
+        }
+
+        function showToast(message, type = "success") {
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            const bgClass = type === 'error' ? 'bg-rose-600' : 'bg-blue-600';
+            
+            toast.className = `pointer-events-auto flex items-center gap-2 px-4 py-3 ${bgClass} text-white text-xs font-medium rounded-xl shadow-lg transition-all transform translate-y-2 opacity-0`;
+            toast.innerHTML = `<i data-lucide="${type === 'error' ? 'alert-circle' : 'check-circle'}" class="w-4 h-4"></i> ${escapeHtml(message)}`;
+            
+            container.appendChild(toast);
+            lucide.createIcons();
+
+            setTimeout(() => {
+                toast.classList.remove('translate-y-2', 'opacity-0');
+            }, 10);
+
+            setTimeout(() => {
+                toast.classList.add('opacity-0');
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
+        function escapeHtml(str) {
+            return (str || '').replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+        }
+    </script>
+</body>
+</html>
